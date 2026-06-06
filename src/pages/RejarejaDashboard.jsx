@@ -9,6 +9,13 @@ import './Dashboard.css'
 const haliColor = { pending: '#f59e0b', accepted: '#16a34a', delivered: '#3b82f6', cancelled: '#ef4444' }
 const haliLabel = { pending: 'Inasubiri', accepted: 'Imekubaliwa', delivered: 'Imefika', cancelled: 'Imekataliwa' }
 
+function waLink(simu, text = 'Habari, nimeona duka lako kwenye DukaConnect') {
+  if (!simu) return '#'
+  const clean = simu.replace(/\D/g, '')
+  const intl = clean.startsWith('0') ? '255' + clean.slice(1) : clean.startsWith('255') ? clean : '255' + clean
+  return `https://wa.me/${intl}?text=${encodeURIComponent(text)}`
+}
+
 function StarBar({ nyota }) {
   return (
     <span className="star-bar">
@@ -55,10 +62,23 @@ export default function RejarejaDashboard() {
   const [submittingRating, setSubmittingRating] = useState(false)
 
   useEffect(() => {
+    if (!profile?.id) return
     fetchMaduka()
     fetchMyOrders()
     fetchMyRatings()
-  }, [])
+
+    const channel = supabase
+      .channel('orders-rejareja-' + profile.id)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: `rejareja_id=eq.${profile.id}`
+      }, () => fetchMyOrders())
+      .subscribe()
+
+    return () => supabase.removeChannel(channel)
+  }, [profile?.id])
 
   // Debounce search
   useEffect(() => {
@@ -310,6 +330,13 @@ export default function RejarejaDashboard() {
                                 >
                                   Agiza
                                 </button>
+                                <a
+                                  href={waLink(item.jumla?.simu)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn-whatsapp-sm"
+                                  onClick={e => e.stopPropagation()}
+                                >💬</a>
                               </div>
                             </div>
                           ))}
@@ -336,7 +363,16 @@ export default function RejarejaDashboard() {
                                   <span className="rating-count">{dukaRatings[duka.id].avg} ({dukaRatings[duka.id].count})</span>
                                 </div>
                               )}
-                              <button className="btn-order">Tazama Bidhaa →</button>
+                              <div className="duka-card-actions">
+                        <button className="btn-order">Tazama Bidhaa →</button>
+                        <a
+                          href={waLink(duka.simu)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-whatsapp"
+                          onClick={e => e.stopPropagation()}
+                        >💬 WhatsApp</a>
+                      </div>
                             </div>
                           ))}
                         </div>
@@ -372,7 +408,16 @@ export default function RejarejaDashboard() {
                           <span className="rating-count">{dukaRatings[duka.id].avg} ({dukaRatings[duka.id].count})</span>
                         </div>
                       )}
-                      <button className="btn-order">Tazama Bidhaa →</button>
+                      <div className="duka-card-actions">
+                        <button className="btn-order">Tazama Bidhaa →</button>
+                        <a
+                          href={waLink(duka.simu)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-whatsapp"
+                          onClick={e => e.stopPropagation()}
+                        >💬 WhatsApp</a>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -465,7 +510,12 @@ export default function RejarejaDashboard() {
                     </div>
                     <div className="order-bottom">
                       <span>{order.jumla?.jina}</span>
-                      <span>{order.jumla?.simu}</span>
+                      <a
+                        href={waLink(order.jumla?.simu, `Habari, nilikuandikia agizo la ${order.bidhaa} kwenye DukaConnect`)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="order-wa-link"
+                      >💬 {order.jumla?.simu}</a>
                       <span>{new Date(order.created_at).toLocaleDateString('sw-TZ')}</span>
                     </div>
                     {order.hali === 'delivered' && (

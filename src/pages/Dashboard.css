@@ -89,7 +89,7 @@
 /* STATS */
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 16px;
   padding: 24px 28px 0;
 }
@@ -1156,6 +1156,73 @@
   color: var(--green-dark);
   margin-bottom: 4px;
 }
+
+/* WHATSAPP BUTTON */
+.btn-whatsapp {
+  display: block;
+  width: 100%;
+  background: #25d366;
+  color: white;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  margin-top: 8px;
+  transition: all 0.2s;
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(37,211,102,0.3);
+}
+.btn-whatsapp:hover { background: #20ba5a; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,211,102,0.4); }
+
+.btn-whatsapp-sm {
+  background: #25d366;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-whatsapp-sm:hover { background: #20ba5a; }
+
+.order-wa-link {
+  color: #16a34a;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 13px;
+  transition: color 0.2s;
+}
+.order-wa-link:hover { color: #15803d; text-decoration: underline; }
+
+/* DUKA CARD ACTIONS */
+.duka-card-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.duka-card-actions .btn-order { margin-top: 0; }
+
+/* EDIT BIDHAA BUTTON */
+.btn-edit {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+  color: var(--gray);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+.btn-edit:hover { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+
+/* MAPATO STAT CARD */
+.stat-mapato { border-top: 3px solid var(--green); }
+.stat-num-green { color: var(--green-dark) !important; font-size: 22px !important; }
 
 /* RESPONSIVE */
 @media (max-width: 600px) {

@@ -2,11 +2,25 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../firebase/config'
-import { Inbox, Truck, Package, ClipboardList, Settings, Plus, Trash2, Search } from 'lucide-react'
+import { Inbox, Truck, Package, ClipboardList, Settings, Plus, Trash2, Search, Pencil } from 'lucide-react'
 import NotifBell from '../components/NotifBell'
 import './Dashboard.css'
 
 const UNITS = ['kipande', 'kilo', 'karton', 'debe', 'lita', 'gunia', 'kopo', 'sanduku', 'mfuko', 'roli']
+
+function waLink(simu, text = '') {
+  if (!simu) return '#'
+  const clean = simu.replace(/\D/g, '')
+  const intl = clean.startsWith('0') ? '255' + clean.slice(1) : clean.startsWith('255') ? clean : '255' + clean
+  const msg = text ? `?text=${encodeURIComponent(text)}` : ''
+  return `https://wa.me/${intl}${msg}`
+}
+
+function formatTZS(n) {
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`
+  if (n >= 1000) return `${(n / 1000).toFixed(0)}K`
+  return Number(n).toLocaleString()
+}
 
 const haliColor = { pending: '#f59e0b', accepted: '#16a34a', delivered: '#3b82f6', cancelled: '#ef4444' }
 const haliLabel = { pending: 'Inasubiri', accepted: 'Imekubaliwa', delivered: 'Imefika', cancelled: 'Imekataliwa' }
@@ -23,6 +37,11 @@ export default function JumlaDashboard() {
 
   // Bidhaa search
   const [bidhaaQuery, setBidhaaQuery] = useState('')
+
+  // Edit bidhaa
+  const [editBidhaa, setEditBidhaa] = useState(null)
+  const [editForm, setEditForm] = useState({ jina: '', bei: '', unit: 'kipande' })
+  const [savingEdit, setSavingEdit] = useState(false)
 
   // Risiti
   const [risiti, setRisiti] = useState(null)
@@ -136,9 +155,35 @@ export default function JumlaDashboard() {
     fetchBidhaa()
   }
 
+  function openEditBidhaa(item) {
+    setEditBidhaa(item)
+    setEditForm({ jina: item.jina, bei: item.bei, unit: item.unit })
+  }
+
+  async function saveEditBidhaa(e) {
+    e.preventDefault()
+    setSavingEdit(true)
+    const { error } = await supabase.from('bidhaa').update({
+      jina: editForm.jina,
+      bei: parseFloat(editForm.bei),
+      unit: editForm.unit,
+    }).eq('id', editBidhaa.id)
+    if (!error) {
+      setEditBidhaa(null)
+      fetchBidhaa()
+      setMsg('✅ Bidhaa imebadilishwa!')
+      setTimeout(() => setMsg(''), 3000)
+    }
+    setSavingEdit(false)
+  }
+
   const pending = orders.filter(o => o.hali === 'pending')
   const active = orders.filter(o => o.hali === 'accepted')
   const history = orders.filter(o => ['delivered', 'cancelled'].includes(o.hali))
+  const mwanzaMwezi = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+  const mapatoMwezi = orders
+    .filter(o => o.hali === 'delivered' && o.bei_kwa_unit > 0 && o.idadi && new Date(o.created_at) >= mwanzaMwezi)
+    .reduce((sum, o) => sum + (o.bei_kwa_unit * o.idadi), 0)
 
   function OrderCard({ order, showActions }) {
     const hasTotal = order.bei_kwa_unit > 0 && order.idadi != null
@@ -164,7 +209,12 @@ export default function JumlaDashboard() {
         </div>
         <div className="order-bottom">
           <span>🏪 {order.rejareja?.jina}</span>
-          <span>📞 {order.rejareja?.simu}</span>
+          <a
+            href={waLink(order.rejareja?.simu, `Habari ${order.rejareja?.jina}, kuhusu agizo lako la ${order.bidhaa} kwenye DukaConnect`)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="order-wa-link"
+          >💬 {order.rejareja?.simu}</a>
           <span>🕒 {new Date(order.created_at).toLocaleDateString('sw-TZ')}</span>
         </div>
         {showActions && (
@@ -219,6 +269,12 @@ export default function JumlaDashboard() {
         <div className="stat-card">
           <span className="stat-num">{avgRating ? `${avgRating.avg}★` : '—'}</span>
           <span className="stat-label">Tathmini {avgRating ? `(${avgRating.count})` : ''}</span>
+        </div>
+        <div className="stat-card stat-mapato">
+          <span className="stat-num stat-num-green">
+            {mapatoMwezi > 0 ? `TZS ${formatTZS(mapatoMwezi)}` : '—'}
+          </span>
+          <span className="stat-label">Mapato Mwezi Huu</span>
         </div>
       </div>
 
@@ -357,7 +413,8 @@ export default function JumlaDashboard() {
                           >
                             {item.ipo ? '✓ Ipo' : '✗ Haipi'}
                           </button>
-                          <button className="btn-delete" onClick={() => deleteBidhaa(item.id)}><Trash2 size={15} /></button>
+                          <button className="btn-edit" onClick={() => openEditBidhaa(item)} title="Hariri"><Pencil size={14} /></button>
+                          <button className="btn-delete" onClick={() => deleteBidhaa(item.id)} title="Futa"><Trash2 size={15} /></button>
                         </div>
                       </div>
                     ))}
@@ -379,6 +436,53 @@ export default function JumlaDashboard() {
           </>
         )}
       </div>
+      {/* EDIT BIDHAA MODAL */}
+      {editBidhaa && (
+        <div className="modal-overlay" onClick={() => setEditBidhaa(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>Hariri Bidhaa</h3>
+            <form onSubmit={saveEditBidhaa}>
+              <div className="form-group">
+                <label>Jina la Bidhaa</label>
+                <input
+                  type="text"
+                  value={editForm.jina}
+                  onChange={e => setEditForm({ ...editForm, jina: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="bidhaa-form-row">
+                <div className="form-group">
+                  <label>Bei (TZS)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.bei}
+                    onChange={e => setEditForm({ ...editForm, bei: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Kwa kila</label>
+                  <select
+                    value={editForm.unit}
+                    onChange={e => setEditForm({ ...editForm, unit: e.target.value })}
+                  >
+                    {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={() => setEditBidhaa(null)}>Ghairi</button>
+                <button type="submit" className="btn-primary" disabled={savingEdit}>
+                  {savingEdit ? 'Inahifadhi...' : 'Hifadhi Mabadiliko'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* RISITI MODAL */}
       {risiti && (
         <div className="modal-overlay" onClick={() => setRisiti(null)}>
