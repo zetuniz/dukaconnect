@@ -47,7 +47,7 @@ export default function Landing() {
 
       {/* FLOATING WHATSAPP */}
       <a
-        href="https://wa.me/255000000000?text=Habari%2C%20nataka%20kujua%20zaidi%20kuhusu%20DukaConnect"
+        href="https://wa.me/255621335993?text=Habari%2C%20nataka%20kujua%20zaidi%20kuhusu%20DukaConnect"
         target="_blank"
         rel="noopener noreferrer"
         className="wa-float"
@@ -258,7 +258,7 @@ export default function Landing() {
             Jisajili Sasa — Ni Bure
           </Link>
           <a
-            href="https://wa.me/255000000000?text=Habari%2C%20nataka%20kujua%20zaidi%20kuhusu%20DukaConnect"
+            href="https://wa.me/255621335993?text=Habari%2C%20nataka%20kujua%20zaidi%20kuhusu%20DukaConnect"
             target="_blank"
             rel="noopener noreferrer"
             className="btn-cta-wa"
